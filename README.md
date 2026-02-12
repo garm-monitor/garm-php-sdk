@@ -1,8 +1,3 @@
-Claro! Aqui está o arquivo **`README.md`** completinho e profissional.
-
-É só clicar em **"Copiar"** no canto do código abaixo, colar no seu arquivo e salvar.
-
-```markdown
 # 🐺 Garm Monitor PHP SDK
 
 ![PHP Version](https://img.shields.io/badge/php-%5E8.0-777BB4.svg?style=flat-square&logo=php&logoColor=white)
@@ -97,7 +92,3 @@ O SDK enriquece seus logs automaticamente com metadados para facilitar o debug:
 ## 📄 Licença
 
 Este projeto está licenciado sob a licença **MIT** - veja o arquivo [LICENSE](https://www.google.com/search?q=LICENSE) para mais detalhes.
-
-```
-
-```
