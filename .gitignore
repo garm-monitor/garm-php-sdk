@@ -1,0 +1,6 @@
+/vendor
+composer.lock
+teste_manual.php
+.env
+.idea
+.vscode
