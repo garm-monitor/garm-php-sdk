@@ -1,10 +1,10 @@
 <?php
 
-namespace Garm;
+namespace Garm\Sdk;
 
 use Exception;
 
-class Client
+class GarmClient
 {
     private string $token;
     private string $baseUrl;
