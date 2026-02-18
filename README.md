@@ -31,9 +31,8 @@ composer require garm-monitor/garm-php-sdk
 Inicialize o cliente no ponto de entrada da sua aplicação (ex: `index.php`, `bootstrap.php` ou `AppServiceProvider` no Laravel).
 
 ```php
-use Garm\Client;
+use Garm\Sdk\GarmClient;
 
-// Inicialize com seu Token de Projeto (Disponível no Dashboard do Garm)
 $garm = new Client('SEU_TOKEN_AQUI', [
     'timeout' => 2, // (Opcional) Tempo limite em segundos para não travar sua aplicação
     'base_url' => '[https://api.garm-monitor.com.br](https://api.garm-monitor.com.br)' // (Opcional) URL da API
@@ -88,7 +87,3 @@ O SDK enriquece seus logs automaticamente com metadados para facilitar o debug:
 | `$garm->warning()` | Alertas que não param o sistema, mas exigem atenção. |
 | `$garm->error()` | Erros padrão que afetam uma funcionalidade. |
 | `$garm->critical()` | Erros graves que exigem atenção imediata (ex: Banco caiu). |
-
-## 📄 Licença
-
-Este projeto está licenciado sob a licença **MIT** - veja o arquivo [LICENSE](https://www.google.com/search?q=LICENSE) para mais detalhes.
