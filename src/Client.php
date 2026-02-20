@@ -1,40 +1,88 @@
 <?php
 
-namespace Garm;
+namespace Garm\Sdk;
 
-use Exception;
+use Throwable;
 
-class Client
+class GarmClient
 {
     private string $token;
     private string $baseUrl;
     private int $timeout;
     private bool $enabled;
 
-    /**
-     * @param string $token O Token de API do Sistema (X-Garm-Token)
-     * @param array $options Opções extras [base_url, timeout, enabled]
-     */
     public function __construct(string $token, array $options = [])
     {
         $this->token = $token;
-        // Permite mudar a URL (útil para dev/homolog)
-        $this->baseUrl = rtrim($options['base_url'] ?? 'https://garm-monitor.com.br/api', '/');
-        $this->timeout = $options['timeout'] ?? 2; // 2 segundos máx para não travar o cliente
+        // Se base_url não for enviada, assume o servidor local do Laravel
+        $this->baseUrl = rtrim($options['base_url'] ?? 'http://127.0.0.1:8000/api', '/');
+        $this->timeout = $options['timeout'] ?? 2;
         $this->enabled = $options['enabled'] ?? true;
     }
 
     /**
-     * Captura um evento e envia para o Garm
+     * MODO GLOBAL
+     * Registra os handlers para capturar erros que NÃO estão em try/catch.
+     */
+    public function registerAsGlobalHandler(): void
+    {
+        set_exception_handler([$this, 'handleException']);
+        set_error_handler([$this, 'handleError']);
+        register_shutdown_function([$this, 'handleShutdown']);
+    }
+
+    /**
+     * Handler para Exceções Globais
+     */
+    public function handleException(Throwable $e): void
+    {
+        $this->critical("Exceção não tratada: " . $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => substr($e->getTraceAsString(), 0, 1000),
+            'type' => get_class($e),
+            'mode' => 'automatic'
+        ]);
+    }
+
+    /**
+     * Handler para Erros de Sintaxe/Aviso do PHP
+     */
+    public function handleError($level, $message, $file, $line): bool
+    {
+        $this->error("Erro PHP ($level): $message", [
+            'file' => $file,
+            'line' => $line,
+            'mode' => 'automatic'
+        ]);
+        return false; 
+    }
+
+    /**
+     * Handler para Erros Fatais (Shutdown)
+     */
+    public function handleShutdown(): void
+    {
+        $error = error_get_last();
+        if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+            $this->critical("Erro Fatal: " . $error['message'], [
+                'file' => $error['file'],
+                'line' => $error['line'],
+                'mode' => 'shutdown'
+            ]);
+        }
+    }
+
+    /**
+     * 
+     * Captura um evento com payload personalizado.
      */
     public function capture(string $level, string $message, array $context = []): bool
     {
-        if (!$this->enabled) {
-            return false;
-        }
+        if (!$this->enabled) return false;
 
-        // 1. Injeta Metadados Automáticos
-        $payload = array_merge($this->getSystemContext(), $context);
+        // Mescla metadados automáticos com o contexto personalizado do desenvolvedor
+        $payload = array_merge($this->getSystemContext(), ['custom_data' => $context]);
 
         $data = json_encode([
             'level' => $level,
@@ -45,9 +93,6 @@ class Client
         return $this->sendRequest($data);
     }
 
-    /**
-     * Envia a requisição via cURL
-     */
     private function sendRequest(string $jsonData): bool
     {
         $ch = curl_init($this->baseUrl . '/logs');
@@ -57,39 +102,28 @@ class Client
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/json',
-                'Accept: application/json',
                 'X-Garm-Token: ' . $this->token,
-                'User-Agent: Garm-PHP-SDK/1.0'
+                'User-Agent: Garm-PHP-SDK/1.1'
             ],
             CURLOPT_POSTFIELDS => $jsonData,
             CURLOPT_TIMEOUT => $this->timeout,
             CURLOPT_CONNECTTIMEOUT => 1,
+            CURLOPT_SSL_VERIFYPEER => false // Importante para dev local
         ]);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
         curl_close($ch);
 
-        // Se quiser, você pode logar erros do próprio SDK em um arquivo local
-        // mas nunca deve jogar uma Exception que pare o site do cliente.
-        if ($error || $httpCode >= 400) {
-            return false;
-        }
-
-        return true;
+        return ($httpCode >= 200 && $httpCode < 300);
     }
 
-    /**
-     * Coleta dados do ambiente automaticamente
-     */
     private function getSystemContext(): array
     {
         return [
             '_meta' => [
                 'php_version' => PHP_VERSION,
-                'server_ip' => $_SERVER['SERVER_ADDR'] ?? null,
-                'client_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'server_ip' => $_SERVER['SERVER_ADDR'] ?? '127.0.0.1',
                 'uri' => $_SERVER['REQUEST_URI'] ?? 'cli',
                 'method' => $_SERVER['REQUEST_METHOD'] ?? 'cli',
                 'timestamp' => date('c')
@@ -97,25 +131,9 @@ class Client
         ];
     }
 
-    // --- Helpers ---
-
-    public function info(string $message, array $context = []): bool
-    {
-        return $this->capture('info', $message, $context);
-    }
-
-    public function warning(string $message, array $context = []): bool
-    {
-        return $this->capture('warning', $message, $context);
-    }
-
-    public function error(string $message, array $context = []): bool
-    {
-        return $this->capture('error', $message, $context);
-    }
-
-    public function critical(string $message, array $context = []): bool
-    {
-        return $this->capture('critical', $message, $context);
-    }
+    // Métodos auxiliares para facilitar a vida do Dev
+    public function info(string $m, array $c = []) { return $this->capture('info', $m, $c); }
+    public function warning(string $m, array $c = []) { return $this->capture('warning', $m, $c); }
+    public function error(string $m, array $c = []) { return $this->capture('error', $m, $c); }
+    public function critical(string $m, array $c = []) { return $this->capture('critical', $m, $c); }
 }

@@ -2,93 +2,35 @@
 
 ![PHP Version](https://img.shields.io/badge/php-%5E8.0-777BB4.svg?style=flat-square&logo=php&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
-![Garm Monitor](https://img.shields.io/badge/Garm-Official%20SDK-0D2538?style=flat-square)
 
-O **SDK Oficial** para integração de aplicações PHP com o **Garm Monitor**.
-Monitore erros, logs e exceções em tempo real com facilidade, segurança e zero impacto na performance.
+O **Garm Monitor** é uma plataforma de observabilidade focada em simplicidade e eficiência. Este SDK permite que você monitore aplicações PHP em tempo real, capturando desde erros fatais até métricas de negócio personalizadas.
 
 ---
 
-## 📋 Requisitos
-
-- **PHP 8.0** ou superior
-- Extensão `ext-curl` habilitada
-- Extensão `ext-json` habilitada
-
-## 📦 Instalação
-
-Instale a biblioteca via Composer no diretório do seu projeto:
+## 🚀 Instalação
 
 ```bash
 composer require garm-monitor/garm-php-sdk
+🛠️ Configuração HíbridaO Garm oferece dois modos de operação que podem (e devem) trabalhar juntos:1. Modo Vigia (Monitoramento Automático)Ideal para sistemas legados ou para garantir que nada escape. Com apenas uma linha, o Garm captura todos os erros nativos do PHP, exceções não tratadas e até erros fatais de memória.PHPuse Garm\Sdk\GarmClient;
 
-```
+$garm = new GarmClient('SEU_TOKEN_AQUI');
 
-## 🚀 Como Usar
-
-### 1. Configuração Inicial
-
-Inicialize o cliente no ponto de entrada da sua aplicação (ex: `index.php`, `bootstrap.php` ou `AppServiceProvider` no Laravel).
-
-```php
-use Garm\Client;
-
-// Inicialize com seu Token de Projeto (Disponível no Dashboard do Garm)
-$garm = new Client('SEU_TOKEN_AQUI', [
-    'timeout' => 2, // (Opcional) Tempo limite em segundos para não travar sua aplicação
-    'base_url' => '[https://api.garm-monitor.com.br](https://api.garm-monitor.com.br)' // (Opcional) URL da API
-]);
-
-```
-
-### 2. Monitorando Erros (Try/Catch)
-
-Esta é a forma recomendada para capturar falhas críticas. O SDK envia o erro completo, incluindo arquivo e linha.
-
-```php
-try {
-    // Seu código crítico aqui...
-    // ex: $db->connect();
+// Ativa a captura global em todo o sistema
+$garm->registerAsGlobalHandler();
+2. Modo Investigador (Captura Manual com Contexto)Para funcionalidades críticas (como checkouts ou integrações de API), use o modo manual para enviar payloads personalizados e entender exatamente o que aconteceu.PHPtry {
+    $checkout = $order->process();
 } catch (\Exception $e) {
-    // O SDK captura o erro e envia para o painel
-    $garm->critical('Falha crítica no processamento', [
-        'erro'    => $e->getMessage(),
-        'arquivo' => $e->getFile(),
-        'linha'   => $e->getLine(),
-        'user_id' => 123 // Você pode enviar dados personalizados do seu negócio
+    // Flexibilidade total para enviar dados do seu negócio
+    $garm->critical("Falha no Checkout", [
+        'order_id' => 1025,
+        'user_email' => 'cliente@email.com',
+        'gateway_error' => $e->getMessage()
     ]);
 }
+📊 Por que usar o Garm?RecursoDescriçãoMonitoramento PassivoCaptura erros sem que você precise alterar códigos antigos.Payload RicoEnvie variáveis de contexto para debugar falhas de lógica.Metadados AutomáticosIP, URL, Versão do PHP e Método HTTP são colhidos em cada log.Alertas DiscordLogs de nível critical geram notificações instantâneas no seu canal.⚙️ Opções do ConstrutorPHP$options = [
+    'base_url' => '[https://sua-api.com/api](https://sua-api.com/api)', // Opcional
+    'timeout'  => 3,                          // Padrão: 2s
+    'enabled'  => true                        // Útil para desativar em ambiente local
+];
 
-```
-
-### 3. Logs Simples
-
-Você também pode usar o Garm para monitorar eventos de rotina:
-
-```php
-$garm->info('Novo usuário registrado', ['email' => 'cliente@email.com']);
-$garm->warning('Tentativa de login falhou', ['ip' => $_SERVER['REMOTE_ADDR']]);
-
-```
-
-## 🛠️ Funcionalidades Automáticas
-
-O SDK enriquece seus logs automaticamente com metadados para facilitar o debug:
-
-* ✅ Versão do PHP
-* ✅ IP do Servidor
-* ✅ URL/URI da requisição
-* ✅ Método HTTP (GET, POST, etc.)
-
-## 🎚️ Níveis de Log Disponíveis
-
-| Método | Descrição |
-| --- | --- |
-| `$garm->info()` | Informações gerais e eventos de sucesso. |
-| `$garm->warning()` | Alertas que não param o sistema, mas exigem atenção. |
-| `$garm->error()` | Erros padrão que afetam uma funcionalidade. |
-| `$garm->critical()` | Erros graves que exigem atenção imediata (ex: Banco caiu). |
-
-## 📄 Licença
-
-Este projeto está licenciado sob a licença **MIT** - veja o arquivo [LICENSE](https://www.google.com/search?q=LICENSE) para mais detalhes.
+$garm = new GarmClient('TOKEN', $options);
