@@ -13,7 +13,16 @@ Instale a biblioteca via Composer:
 
 ```bash
 composer require garm-monitor/garm-php-sdk
-🛠️ Configuração HíbridaO Garm oferece dois modos de operação que trabalham em conjunto para garantir cobertura total da sua aplicação:1. Modo Vigia (Monitoramento Automático)Ideal para sistemas legados ou para garantir que nada escape. Com apenas uma linha, o Garm captura erros nativos do PHP, exceções não tratadas e até erros fatais de memória (Shutdown).PHPrequire 'vendor/autoload.php';
+```
+
+# 🛠️ Configuração Híbrida
+O Garm oferece dois modos de operação que trabalham em conjunto para garantir cobertura total da sua aplicação:
+
+1. Modo Vigia (Monitoramento Automático)
+Ideal para sistemas legados ou para garantir que nada escape. Com apenas uma linha, o Garm captura erros nativos do PHP, exceções não tratadas e até erros fatais de memória (Shutdown).
+
+```bash
+require 'vendor/autoload.php';
 
 use Garm\Sdk\GarmClient;
 
@@ -23,7 +32,13 @@ $garm = new GarmClient('SEU_TOKEN_AQUI');
 $garm->registerAsGlobalHandler();
 
 // A partir daqui, qualquer erro não tratado será enviado ao Garm!
-2. Modo Investigador (Captura Manual)Para funcionalidades críticas (como checkouts ou integrações de API), use o modo manual para enviar payloads personalizados. Isso permite entender o contexto do erro (ex: qual usuário ou pedido falhou).PHPtry {
+```
+
+2. Modo Investigador (Captura Manual)
+Para funcionalidades críticas (como checkouts ou integrações de API), use o modo manual para enviar payloads personalizados. Isso permite entender o contexto do erro (ex: qual usuário ou pedido falhou).
+
+```bash
+try {
     $checkout = $order->process();
 } catch (\Exception $e) {
     // Flexibilidade total para enviar dados do seu negócio
@@ -33,10 +48,37 @@ $garm->registerAsGlobalHandler();
         'gateway_error' => $e->getMessage()
     ]);
 }
-📊 Funcionalidades AutomáticasO SDK enriquece cada log automaticamente com metadados cruciais para o debug:✅ Versão do PHP e IP do Servidor.✅ Contexto HTTP: URL da requisição (URI), Método (GET/POST) e IP do cliente.✅ Stack Trace: Rastro completo do erro em capturas automáticas.✅ Zero Impacto: Timeout configurável para não travar a experiência do usuário.🎚️ Níveis de Log DisponíveisMétodoDescriçãoAlerta Discord$garm->info()Informações gerais e eventos de sucesso.⚪$garm->warning()Alertas que exigem atenção, mas não param o sistema.⚪$garm->error()Erros padrão que afetam uma funcionalidade.⚪$garm->critical()Falhas graves. Exige atenção imediata.🔴 Sim⚙️ Opções do ConstrutorVocê pode ajustar o comportamento do SDK no momento da inicialização:PHP$options = [
+```
+
+# 📊 Funcionalidades Automáticas
+O SDK enriquece cada log automaticamente com metadados cruciais para o debug:
+
+✅ Versão do PHP e IP do Servidor.
+
+✅ Contexto HTTP: URL da requisição (URI), Método (GET/POST) e IP do cliente.
+
+✅ Stack Trace: Rastro completo do erro em capturas automáticas.
+
+✅ Zero Impacto: Timeout configurável para não travar a experiência do usuário.
+
+# Níveis de Log Disponíveis
+```bash
+$garm->info()	Informações gerais e eventos de sucesso.
+$garm->warning()	Alertas que exigem atenção, mas não param o sistema.
+$garm->error()	Erros padrão que afetam uma funcionalidade.
+$garm->critical()	Falhas graves. Exige atenção imediata. Possuem integração com webhook do discord
+```
+
+# ⚙️ Opções do Construtor
+Você pode ajustar o comportamento do SDK no momento da inicialização:
+
+```bash
+$options = [
     'base_url' => '[https://api.garm-monitor.com.br](https://api.garm-monitor.com.br)', // URL da sua API
     'timeout'  => 2,                                // Tempo limite da requisição (segundos)
     'enabled'  => true                              // Útil para desativar em ambiente local
 ];
 
 $garm = new GarmClient('SEU_TOKEN_AQUI', $options);
+```
+
