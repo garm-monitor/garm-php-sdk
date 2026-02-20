@@ -16,7 +16,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Garm\\": "src/"
+            "Garm\\Sdk\\": "src/"
         }
     },
     "minimum-stability": "stable"

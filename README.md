@@ -3,21 +3,27 @@
 ![PHP Version](https://img.shields.io/badge/php-%5E8.0-777BB4.svg?style=flat-square&logo=php&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 
-O **Garm Monitor** é uma plataforma de observabilidade focada em simplicidade e eficiência. Este SDK permite que você monitore aplicações PHP em tempo real, capturando desde erros fatais até métricas de negócio personalizadas.
+O **Garm Monitor** é uma plataforma de observabilidade focada em simplicidade e eficiência. Este SDK permite monitorar aplicações PHP em tempo real, capturando desde erros fatais automáticos até métricas de negócio personalizadas.
 
 ---
 
 ## 🚀 Instalação
 
+Instale a biblioteca via Composer:
+
 ```bash
 composer require garm-monitor/garm-php-sdk
-🛠️ Configuração HíbridaO Garm oferece dois modos de operação que podem (e devem) trabalhar juntos:1. Modo Vigia (Monitoramento Automático)Ideal para sistemas legados ou para garantir que nada escape. Com apenas uma linha, o Garm captura todos os erros nativos do PHP, exceções não tratadas e até erros fatais de memória.PHPuse Garm\Sdk\GarmClient;
+🛠️ Configuração HíbridaO Garm oferece dois modos de operação que trabalham em conjunto para garantir cobertura total da sua aplicação:1. Modo Vigia (Monitoramento Automático)Ideal para sistemas legados ou para garantir que nada escape. Com apenas uma linha, o Garm captura erros nativos do PHP, exceções não tratadas e até erros fatais de memória (Shutdown).PHPrequire 'vendor/autoload.php';
+
+use Garm\Sdk\GarmClient;
 
 $garm = new GarmClient('SEU_TOKEN_AQUI');
 
-// Ativa a captura global em todo o sistema
+// Ativa a captura global em todo o sistema (Vigia)
 $garm->registerAsGlobalHandler();
-2. Modo Investigador (Captura Manual com Contexto)Para funcionalidades críticas (como checkouts ou integrações de API), use o modo manual para enviar payloads personalizados e entender exatamente o que aconteceu.PHPtry {
+
+// A partir daqui, qualquer erro não tratado será enviado ao Garm!
+2. Modo Investigador (Captura Manual)Para funcionalidades críticas (como checkouts ou integrações de API), use o modo manual para enviar payloads personalizados. Isso permite entender o contexto do erro (ex: qual usuário ou pedido falhou).PHPtry {
     $checkout = $order->process();
 } catch (\Exception $e) {
     // Flexibilidade total para enviar dados do seu negócio
@@ -27,10 +33,10 @@ $garm->registerAsGlobalHandler();
         'gateway_error' => $e->getMessage()
     ]);
 }
-📊 Por que usar o Garm?RecursoDescriçãoMonitoramento PassivoCaptura erros sem que você precise alterar códigos antigos.Payload RicoEnvie variáveis de contexto para debugar falhas de lógica.Metadados AutomáticosIP, URL, Versão do PHP e Método HTTP são colhidos em cada log.Alertas DiscordLogs de nível critical geram notificações instantâneas no seu canal.⚙️ Opções do ConstrutorPHP$options = [
-    'base_url' => '[https://sua-api.com/api](https://sua-api.com/api)', // Opcional
-    'timeout'  => 3,                          // Padrão: 2s
-    'enabled'  => true                        // Útil para desativar em ambiente local
+📊 Funcionalidades AutomáticasO SDK enriquece cada log automaticamente com metadados cruciais para o debug:✅ Versão do PHP e IP do Servidor.✅ Contexto HTTP: URL da requisição (URI), Método (GET/POST) e IP do cliente.✅ Stack Trace: Rastro completo do erro em capturas automáticas.✅ Zero Impacto: Timeout configurável para não travar a experiência do usuário.🎚️ Níveis de Log DisponíveisMétodoDescriçãoAlerta Discord$garm->info()Informações gerais e eventos de sucesso.⚪$garm->warning()Alertas que exigem atenção, mas não param o sistema.⚪$garm->error()Erros padrão que afetam uma funcionalidade.⚪$garm->critical()Falhas graves. Exige atenção imediata.🔴 Sim⚙️ Opções do ConstrutorVocê pode ajustar o comportamento do SDK no momento da inicialização:PHP$options = [
+    'base_url' => '[https://api.garm-monitor.com.br](https://api.garm-monitor.com.br)', // URL da sua API
+    'timeout'  => 2,                                // Tempo limite da requisição (segundos)
+    'enabled'  => true                              // Útil para desativar em ambiente local
 ];
 
-$garm = new GarmClient('TOKEN', $options);
+$garm = new GarmClient('SEU_TOKEN_AQUI', $options);
