@@ -3,8 +3,7 @@
 ![PHP Version](https://img.shields.io/badge/php-%5E8.0-777BB4.svg?style=flat-square&logo=php&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 
-O **Garm Monitor** é uma plataforma de observabilidade focada em simplicidade e eficiência. Este SDK permite monitorar aplicações PHP em tempo real, capturando desde erros fatais automáticos até métricas de negócio personalizadas.
-
+O **Garm Monitor** é uma plataforma de observabilidade e segurança focada em simplicidade. Este SDK permite monitorar aplicações PHP de forma universal, capturando desde erros fatais até métricas de SOC e Segurança em tempo real.
 ---
 
 ## 🚀 Instalação
@@ -15,70 +14,65 @@ Instale a biblioteca via Composer:
 composer require garm-monitor/garm-php-sdk
 ```
 
-# 🛠️ Configuração Híbrida
-O Garm oferece dois modos de operação que trabalham em conjunto para garantir cobertura total da sua aplicação:
+# 🛠️ Configuração Global
+O Garm utiliza o padrão Singleton. Você configura uma única vez no início da sua aplicação (ex: index.php ou AppServiceProvider.php) e o monitoramento já começa a rodar sozinho.
 
-1. Modo Vigia (Monitoramento Automático)
-Ideal para sistemas legados ou para garantir que nada escape. Com apenas uma linha, o Garm captura erros nativos do PHP, exceções não tratadas e até erros fatais de memória (Shutdown).
 
 ```bash
 require 'vendor/autoload.php';
 
 use Garm\Sdk\GarmClient;
 
-$garm = new GarmClient('SEU_TOKEN_AQUI');
-
-// Ativa a captura global em todo o sistema (Vigia)
-$garm->registerAsGlobalHandler();
-
-// A partir daqui, qualquer erro não tratado será enviado ao Garm!
+// Inicializa o SDK com seu Token do Painel Garm
+GarmClient::init('SEU_TOKEN_AQUI', [
+    'base_url' => 'https://api.garm-monitor.com.br', // Opcional
+    'timeout'  => 2                                  // Opcional
+]);
 ```
 
-2. Modo Investigador (Captura Manual)
-Para funcionalidades críticas (como checkouts ou integrações de API), use o modo manual para enviar payloads personalizados. Isso permite entender o contexto do erro (ex: qual usuário ou pedido falhou).
+# 🐺 Uso Universal (Helper Global)
+Após a inicialização, você não precisa mais instanciar classes. Use a função global garm() em qualquer lugar do seu código.
 
+1. Envio Direto
 ```bash
-try {
-    $checkout = $order->process();
-} catch (\Exception $e) {
-    // Flexibilidade total para enviar dados do seu negócio
-    $garm->critical("Falha no Checkout", [
-        'order_id' => 1025,
-        'user_email' => 'cliente@email.com',
-        'gateway_error' => $e->getMessage()
-    ]);
-}
+garm('critical', 'Falha no Checkout', ['user_id' => 123]);
 ```
 
-# 📊 Funcionalidades Automáticas
-O SDK enriquece cada log automaticamente com metadados cruciais para o debug:
-
-✅ Versão do PHP e IP do Servidor.
-
-✅ Contexto HTTP: URL da requisição (URI), Método (GET/POST) e IP do cliente.
-
-✅ Stack Trace: Rastro completo do erro em capturas automáticas.
-
-✅ Zero Impacto: Timeout configurável para não travar a experiência do usuário.
-
-# Níveis de Log Disponíveis
+2. Envio Encadeado (Estilo Fluent)
 ```bash
-$garm->info()	Informações gerais e eventos de sucesso.
-$garm->warning()	Alertas que exigem atenção, mas não param o sistema.
-$garm->error()	Erros padrão que afetam uma funcionalidade.
-$garm->critical()	Falhas graves. Exige atenção imediata. Possuem integração com webhook do discord
+garm()->info('Pagamento processado com sucesso');
+garm()->warning('Tentativa de login inválida', ['ip' => '192.168.0.1']);
 ```
 
-# ⚙️ Opções do Construtor
-Você pode ajustar o comportamento do SDK no momento da inicialização:
+# 🛡️ Monitoramento Automático (Vigia)
+Ao chamar o GarmClient::init(), o SDK ativa automaticamente o monitoramento de:
 
-```bash
-$options = [
-    'base_url' => '[https://api.garm-monitor.com.br](https://api.garm-monitor.com.br)', // URL da sua API
-    'timeout'  => 2,                                // Tempo limite da requisição (segundos)
-    'enabled'  => true                              // Útil para desativar em ambiente local
-];
+- Exceções não tratadas (try/catch esquecidos).
 
-$garm = new GarmClient('SEU_TOKEN_AQUI', $options);
-```
+- Erros de Sintaxe e Avisos do PHP.
 
+- Erros Fatais (Shutdown) como estouro de memória ou timeout do servidor.
+
+
+# 📊 Inteligência de Dados
+
+Cada log enviado é enriquecido automaticamente com metadados para facilitar o seu trabalho de SOC:
+
+- Contexto de Rede: IP do Servidor e IP do Cliente.
+
+- Contexto HTTP: URI da requisição e Método (GET, POST, etc).
+
+- Ambiente: Versão do PHP e Timestamp preciso.
+
+# ⚙️ Níveis de Log e Alertas
+
+- info(): Eventos de rotina.
+
+- warning(): Alertas que não param o sistema.
+
+- error(): Falhas em funcionalidades específicas.
+
+- critical(): Dispara alerta imediato no Discord (configurado no dashboard).
+
+# 💡 Dica para Desenvolvedores
+Para ambiente local, você pode desativar o envio de logs ou ignorar o SSL (já configurado por padrão no SDK para facilitar seu dev local).

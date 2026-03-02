@@ -6,19 +6,38 @@ use Throwable;
 
 class GarmClient
 {
-    private string $token;
-    private string $baseUrl;
-    private int $timeout;
-    private bool $enabled;
+    private static ?self $instance = null;
 
-    public function __construct(string $token, array $options = [])
-    {
-        $this->token = $token;
-        // Se base_url não for enviada, assume o servidor local do Laravel
-        $this->baseUrl = rtrim($options['base_url'] ?? 'http://127.0.0.1:8000/api', '/');
-        $this->timeout = $options['timeout'] ?? 2;
-        $this->enabled = $options['enabled'] ?? true;
+    private function __construct(
+        private string $token,
+        private string $baseUrl = 'http://localhost:8080',
+        private int $timeout = 2,
+        private bool $enabled = true
+    ){
+
     }
+
+    public static function init(string $token, array $options = []): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self(
+                $token,
+                $options['base_url'] ?? 'http://localhost:8080',
+                $options['timeout'] ?? 2,
+                $options['enabled'] ?? true
+            );
+        }
+        return self::$instance;
+    }
+
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            throw new \Exception ("Garm SDK: Execute GarmClient::init() antes de usar.");
+        }
+        return self::$instance;
+    }
+
 
     /**
      * MODO GLOBAL
