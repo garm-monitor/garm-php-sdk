@@ -10,7 +10,7 @@ class GarmClient
 
     private function __construct(
         private string $token,
-        private string $baseUrl = 'http://localhost:8080',
+        private string $baseUrl = 'https://api.garm-monitor.com.br',
         private int $timeout = 2,
         private bool $enabled = true
     ){
@@ -61,7 +61,7 @@ class GarmClient
             'trace' => substr($e->getTraceAsString(), 0, 1000),
             'type' => get_class($e),
             'mode' => 'automatic'
-        ]);
+        ], true);
     }
 
     /**
@@ -73,7 +73,7 @@ class GarmClient
             'file' => $file,
             'line' => $line,
             'mode' => 'automatic'
-        ]);
+        ], true);
         return false; 
     }
 
@@ -88,15 +88,14 @@ class GarmClient
                 'file' => $error['file'],
                 'line' => $error['line'],
                 'mode' => 'shutdown'
-            ]);
+            ], true);
         }
     }
 
     /**
-     * 
-     * Captura um evento com payload personalizado.
+     * Captura um evento com payload personalizado
      */
-    public function capture(string $level, string $message, array $context = []): bool
+    public function capture(string $level, string $message, array $context = [], bool $notifyDiscord = false): bool
     {
         if (!$this->enabled) return false;
 
@@ -107,6 +106,7 @@ class GarmClient
             'level' => $level,
             'message' => $message,
             'payload' => $payload,
+            'notify_discord' => $notifyDiscord 
         ]);
 
         return $this->sendRequest($data);
@@ -122,21 +122,20 @@ class GarmClient
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/json',
                 'X-Garm-Token: ' . $this->token,
-                'User-Agent: Garm-PHP-SDK/1.1'
+                'User-Agent: Garm-PHP-SDK/2.0' 
             ],
             CURLOPT_POSTFIELDS => $jsonData,
             CURLOPT_TIMEOUT => $this->timeout,
             CURLOPT_CONNECTTIMEOUT => 1,
-            CURLOPT_SSL_VERIFYPEER => false // Importante para dev local
+            CURLOPT_SSL_VERIFYPEER => false
         ]);
 
+        // Executa o envio
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
+        
         return ($httpCode >= 200 && $httpCode < 300);
     }
-
     private function getSystemContext(): array
     {
         return [
@@ -150,9 +149,11 @@ class GarmClient
         ];
     }
 
-    // Métodos auxiliares para facilitar a vida do Dev
-    public function info(string $m, array $c = []) { return $this->capture('info', $m, $c); }
-    public function warning(string $m, array $c = []) { return $this->capture('warning', $m, $c); }
-    public function error(string $m, array $c = []) { return $this->capture('error', $m, $c); }
-    public function critical(string $m, array $c = []) { return $this->capture('critical', $m, $c); }
+    // =========================================================================
+    //                          MÉTODOS AUXILIARES
+    // =========================================================================
+    public function info(string $m, array $c = [], bool $notify = false) { return $this->capture('info', $m, $c, $notify); }
+    public function warning(string $m, array $c = [], bool $notify = false) { return $this->capture('warning', $m, $c, $notify); }
+    public function error(string $m, array $c = [], bool $notify = false) { return $this->capture('error', $m, $c, $notify); }
+    public function critical(string $m, array $c = [], bool $notify = false) { return $this->capture('critical', $m, $c, $notify); }
 }
